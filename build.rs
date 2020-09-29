@@ -42,24 +42,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         File::create(PathBuf::from(std::env::var_os("OUT_DIR").unwrap()).join("func_defs.rs"))?;
     writeln!(
         &mut func_defs,
-        "static ORDINAL_BASE: u16 = {};",
+        "pub static ORDINAL_BASE: u16 = {};",
         pe_file.exports()?.ordinal_base()
     )?;
     writeln!(
         &mut func_defs,
-        "static mut FUNCTIONS: [*const (); {}] = [std::ptr::null(); {}];",
+        "pub static mut FUNCTIONS: [*const (); {}] = [std::ptr::null(); {}];",
         export_names.len(),
         export_names.len()
     )?;
     writeln!(
         &mut func_defs,
-        "static FUNCTION_NAMES: [FunctionName; {}] = [",
+        "pub static FUNCTION_NAMES: [FunctionName; {}] = [",
         export_names.len()
     )?;
     for export_name in export_names {
         if let Some(name) = export_name {
             assert!(!name.contains(&('"' as u8)) && !name.contains(&('\\' as u8)));
-            writeln!(&mut func_defs, "Some(\"{}\"),", name)?;
+            writeln!(&mut func_defs, "Some(\"{}\\0\"),", name)?;
         } else {
             writeln!(&mut func_defs, "None,",)?;
         }
