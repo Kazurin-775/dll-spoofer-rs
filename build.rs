@@ -22,6 +22,7 @@ fn get_libpath() -> PathBuf {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let libpath = get_libpath();
+    let out_dir = PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
 
     // read exports from the DLL file
 
@@ -36,14 +37,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         export_names[export.1] = Some(export.0?);
     }
 
+    let ordinal_base = pe_file.exports()?.ordinal_base() as usize;
+
     // generate func_defs.rs
 
-    let mut func_defs =
-        File::create(PathBuf::from(std::env::var_os("OUT_DIR").unwrap()).join("func_defs.rs"))?;
+    let mut func_defs = File::create(out_dir.join("func_defs.rs"))?;
     writeln!(
         &mut func_defs,
         "pub static ORDINAL_BASE: u16 = {};",
-        pe_file.exports()?.ordinal_base()
+        ordinal_base
     )?;
     writeln!(
         &mut func_defs,
@@ -61,24 +63,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             assert!(!name.contains(&('"' as u8)) && !name.contains(&('\\' as u8)));
             writeln!(&mut func_defs, "Some(\"{}\\0\"),", name)?;
         } else {
-            writeln!(&mut func_defs, "None,",)?;
+            writeln!(&mut func_defs, "None,")?;
         }
     }
     writeln!(&mut func_defs, "];")?;
     func_defs.flush()?;
 
-    // generate proxy_funcs.rs
-    
-    let mut proxy_funcs =
-        File::create(PathBuf::from(std::env::var_os("OUT_DIR").unwrap()).join("proxy_funcs.rs"))?;
+    // generate proxy_funcs.rs and exports.def
+
+    let mut proxy_funcs = File::create(out_dir.join("proxy_funcs.rs"))?;
+    let mut exports_def = File::create(out_dir.join("exports.def"))?;
+    writeln!(&mut exports_def, "LIBRARY dll-spoofer-rs\nEXPORTS")?;
+
     for (i, export_name) in export_names.iter().enumerate() {
         if let Some(name) = export_name {
             writeln!(&mut proxy_funcs, "proxy_func!({}, {});", name, i)?;
+            writeln!(&mut exports_def, "{} @{}", name, i + ordinal_base)?;
         } else {
             writeln!(&mut proxy_funcs, "proxy_func!(unkExport{}, {});", i, i)?;
+            writeln!(&mut exports_def, "unkExport{} @{}", i, i + ordinal_base)?;
         }
     }
     proxy_funcs.flush()?;
+    exports_def.flush()?;
+
+    // write compiler flags
+
+    println!(
+        "cargo:rustc-cdylib-link-arg=/def:{}",
+        out_dir.join("exports.def").to_str().unwrap()
+    );
 
     Ok(())
 }
