@@ -1,6 +1,7 @@
 #![feature(asm, naked_functions)]
 
 mod config;
+mod hook;
 mod proxy_funcs;
 
 use std::os::windows::ffi::{OsStrExt, OsStringExt};
@@ -41,7 +42,7 @@ fn initialize() -> Result<(), Win32Error> {
         } else {
             MAKEINTRESOURCEA(i as u16 + config::ORDINAL_BASE)
         };
-        
+
         let addr = unsafe { GetProcAddress(lib, name_ptr) };
         if !addr.is_null() {
             unsafe {
@@ -51,6 +52,8 @@ fn initialize() -> Result<(), Win32Error> {
             eprintln!("Warning: unresolved import at index {}", i);
         }
     }
+
+    hook::install_hook();
 
     Ok(())
 }
