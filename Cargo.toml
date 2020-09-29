@@ -1,0 +1,8 @@
+[package]
+authors = ["Kazurin Nanako"]
+edition = "2018"
+license = "MIT"
+name = "dll-spoofer-rs"
+version = "0.1.0"
+
+[dependencies]
