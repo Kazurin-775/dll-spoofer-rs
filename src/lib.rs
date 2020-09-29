@@ -1,4 +1,7 @@
+#![feature(asm, naked_functions)]
+
 mod config;
+mod proxy_funcs;
 
 use std::os::windows::ffi::{OsStrExt, OsStringExt};
 use std::{ffi::OsString, path::PathBuf};
@@ -52,7 +55,7 @@ fn initialize() -> Result<(), Win32Error> {
 }
 
 #[no_mangle]
-pub extern "system" fn DllMain(_module: HINSTANCE, reason: DWORD, _reserved: LPVOID) -> BOOL {
+extern "system" fn DllMain(_module: HINSTANCE, reason: DWORD, _reserved: LPVOID) -> BOOL {
     match reason {
         DLL_PROCESS_ATTACH => {
             if let Err(e) = initialize() {

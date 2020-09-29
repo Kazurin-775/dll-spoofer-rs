@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "pub static FUNCTION_NAMES: [FunctionName; {}] = [",
         export_names.len()
     )?;
-    for export_name in export_names {
+    for export_name in export_names.iter() {
         if let Some(name) = export_name {
             assert!(!name.contains(&('"' as u8)) && !name.contains(&('\\' as u8)));
             writeln!(&mut func_defs, "Some(\"{}\\0\"),", name)?;
@@ -65,6 +65,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     writeln!(&mut func_defs, "];")?;
+    func_defs.flush()?;
+
+    // generate proxy_funcs.rs
+    
+    let mut proxy_funcs =
+        File::create(PathBuf::from(std::env::var_os("OUT_DIR").unwrap()).join("proxy_funcs.rs"))?;
+    for (i, export_name) in export_names.iter().enumerate() {
+        if let Some(name) = export_name {
+            writeln!(&mut proxy_funcs, "proxy_func!({}, {});", name, i)?;
+        } else {
+            writeln!(&mut proxy_funcs, "proxy_func!(unkExport{}, {});", i, i)?;
+        }
+    }
+    proxy_funcs.flush()?;
 
     Ok(())
 }
