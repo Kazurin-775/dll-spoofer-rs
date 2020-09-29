@@ -12,15 +12,15 @@ use winapi::um::{sysinfoapi::GetSystemDirectoryW, winuser::MAKEINTRESOURCEA};
 use winapi::{shared::minwindef::*, um::libloaderapi::LoadLibraryW};
 
 fn get_libpath_as_wstring() -> Vec<u16> {
+    // get the path of System32
     let len = unsafe { GetSystemDirectoryW(std::ptr::null_mut(), 0) };
     let mut buf = Vec::<u16>::new();
     buf.resize(len as usize, 0);
-    unsafe {
-        assert_eq!(GetSystemDirectoryW(buf.as_mut_ptr(), len), len - 1);
-    }
+    unsafe { assert_eq!(GetSystemDirectoryW(buf.as_mut_ptr(), len), len - 1) }
     let mut path_buf = PathBuf::from(OsString::from_wide(&buf[0..len as usize - 1]));
+
     path_buf.push(format!("{}.dll", config::LIBNAME_UNTRIMMED.trim()));
-    dbg!(&path_buf);
+
     path_buf
         .as_os_str()
         .encode_wide()
@@ -41,6 +41,7 @@ fn initialize() -> Result<(), Win32Error> {
         } else {
             MAKEINTRESOURCEA(i as u16 + config::ORDINAL_BASE)
         };
+        
         let addr = unsafe { GetProcAddress(lib, name_ptr) };
         if !addr.is_null() {
             unsafe {
@@ -71,15 +72,9 @@ extern "system" fn DllMain(_module: HINSTANCE, reason: DWORD, _reserved: LPVOID)
 
 #[test]
 fn imports_resolved() {
-    assert_eq!(
-        DllMain(
-            std::ptr::null_mut(),
-            DLL_PROCESS_ATTACH,
-            std::ptr::null_mut()
-        ),
-        TRUE
-    );
+    assert!(initialize().is_ok());
     unsafe {
+        assert!(config::FUNCTIONS.len() > 0);
         for func in config::FUNCTIONS.iter() {
             assert!(!func.is_null());
         }
