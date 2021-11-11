@@ -3,6 +3,7 @@
 mod config;
 mod hook;
 mod proxy_funcs;
+mod racy_cell;
 
 use std::os::windows::ffi::{OsStrExt, OsStringExt};
 use std::{ffi::OsString, path::PathBuf};
@@ -46,7 +47,7 @@ fn initialize() -> Result<(), Win32Error> {
         let addr = unsafe { GetProcAddress(lib, name_ptr) };
         if !addr.is_null() {
             unsafe {
-                config::FUNCTIONS[i] = addr as _;
+                config::FUNCTIONS.get_mut()[i] = addr as _;
             }
         } else {
             eprintln!("Warning: unresolved import at index {}", i);
@@ -76,10 +77,9 @@ extern "system" fn DllMain(_module: HINSTANCE, reason: DWORD, _reserved: LPVOID)
 #[test]
 fn imports_resolved() {
     assert!(initialize().is_ok());
-    unsafe {
-        assert!(config::FUNCTIONS.len() > 0);
-        for func in config::FUNCTIONS.iter() {
-            assert!(!func.is_null());
-        }
+    let functions = unsafe { config::FUNCTIONS.get_mut() };
+    assert!(functions.len() > 0);
+    for func in functions.iter() {
+        assert!(!func.is_null());
     }
 }

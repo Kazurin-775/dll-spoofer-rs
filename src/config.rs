@@ -1,3 +1,5 @@
+use crate::racy_cell::RacyCell;
+
 pub static LIBNAME_UNTRIMMED: &'static str = include_str!("../libname.cfg");
 
 pub type FunctionName = Option<&'static str>;

@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     writeln!(
         &mut func_defs,
-        "pub static mut FUNCTIONS: [*const (); {}] = [std::ptr::null(); {}];",
+        "pub static FUNCTIONS: RacyCell<[*const (); {}]> = RacyCell::new([std::ptr::null(); {}]);",
         export_names.len(),
         export_names.len()
     )?;
