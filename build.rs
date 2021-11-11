@@ -46,24 +46,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     writeln!(
         &mut func_defs,
         "pub static ORDINAL_BASE: u16 = {};",
-        ordinal_base
+        ordinal_base,
     )?;
     writeln!(
         &mut func_defs,
-        "pub static FUNCTIONS: RacyCell<[*const (); {}]> = RacyCell::new([std::ptr::null(); {}]);",
+        "pub const NUM_FUNCTIONS: usize = {};",
         export_names.len(),
-        export_names.len()
     )?;
     writeln!(
         &mut func_defs,
-        "pub static FUNCTION_NAMES: [FunctionName; {}] = [",
-        export_names.len()
+        "pub static FUNCTION_NAMES: [FunctionName; NUM_FUNCTIONS] = [",
     )?;
 
     for export_name in export_names.iter() {
         if let Some(name) = export_name {
             assert!(!name.contains(&('"' as u8)) && !name.contains(&('\\' as u8)));
-            writeln!(&mut func_defs, "Some(\"{}\\0\"),", name)?;
+            writeln!(&mut func_defs, "Some(b\"{}\\0\"),", name)?;
         } else {
             writeln!(&mut func_defs, "None,")?;
         }

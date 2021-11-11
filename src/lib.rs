@@ -39,7 +39,7 @@ fn initialize() -> Result<(), Win32Error> {
 
     for (i, name) in config::FUNCTION_NAMES.iter().enumerate() {
         let name_ptr: *const i8 = if let Some(name) = name {
-            name.as_ptr() as _
+            name.as_ptr().cast()
         } else {
             MAKEINTRESOURCEA(i as u16 + config::ORDINAL_BASE)
         };
@@ -47,10 +47,10 @@ fn initialize() -> Result<(), Win32Error> {
         let addr = unsafe { GetProcAddress(lib, name_ptr) };
         if !addr.is_null() {
             unsafe {
-                config::FUNCTIONS.get_mut()[i] = addr as _;
+                config::FUNCTION_PTRS.get_mut()[i] = addr as _;
             }
         } else {
-            eprintln!("Warning: unresolved import at index {}", i);
+            eprintln!("Warning: unresolved import {:?} at index {}", name, i);
         }
     }
 
@@ -77,9 +77,9 @@ extern "system" fn DllMain(_module: HINSTANCE, reason: DWORD, _reserved: LPVOID)
 #[test]
 fn imports_resolved() {
     assert!(initialize().is_ok());
-    let functions = unsafe { config::FUNCTIONS.get_mut() };
-    assert!(functions.len() > 0);
-    for func in functions.iter() {
+    let function_ptrs = unsafe { config::FUNCTION_PTRS.get_mut() };
+    assert!(function_ptrs.len() > 0);
+    for func in function_ptrs.iter() {
         assert!(!func.is_null());
     }
 }

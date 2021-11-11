@@ -20,7 +20,7 @@ macro_rules! proxy_func {
             // does not work anymore.
             asm!(
                 "jmp [rip + {base} + {offset}]",
-                base = sym config::FUNCTIONS,
+                base = sym config::FUNCTION_PTRS,
                 offset = const (std::mem::size_of::<*const ()>() * $index),
                 options(noreturn),
             );
