@@ -35,7 +35,7 @@ macro_rules! proxy_func {
             // yet, so let's use AT&T syntax for the time being.
             #[cfg(target_arch = "x86")]
             asm!(
-                "jmpl *({base} + {offset})",
+                "jmp *({base} + {offset})",
                 base = sym config::FUNCTION_PTRS,
                 offset = const (std::mem::size_of::<*const ()>() * $index),
                 options(att_syntax, noreturn),
