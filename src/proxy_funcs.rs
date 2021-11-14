@@ -18,11 +18,27 @@ macro_rules! proxy_func {
             //
             // The old-fashioned way of using `&config::FUNCTIONS[$index]`
             // does not work anymore.
+            #[cfg(target_arch = "x86_64")]
             asm!(
                 "jmp [rip + {base} + {offset}]",
                 base = sym config::FUNCTION_PTRS,
                 offset = const (std::mem::size_of::<*const ()>() * $index),
                 options(noreturn),
+            );
+
+            // For the 32-bit case, simple displacement-based addressing
+            // will be fine.
+            // However, the assembler for Intel syntax seems to be cursed.
+            // It always treats `{base} + {offset}` as the jump target rather
+            // than a memory operand, even if we add `[]` around it.
+            // I've never found a way to get this working with Intel syntax
+            // yet, so let's use AT&T syntax for the time being.
+            #[cfg(target_arch = "x86")]
+            asm!(
+                "jmpl *({base} + {offset})",
+                base = sym config::FUNCTION_PTRS,
+                offset = const (std::mem::size_of::<*const ()>() * $index),
+                options(att_syntax, noreturn),
             );
         }
     };
