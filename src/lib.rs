@@ -1,4 +1,4 @@
-#![feature(asm, naked_functions)]
+#![feature(asm_const, asm_sym, naked_functions)]
 
 mod config;
 mod hook;

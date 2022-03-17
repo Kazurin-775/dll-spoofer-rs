@@ -1,3 +1,5 @@
+use std::arch::asm;
+
 use crate::config;
 
 macro_rules! proxy_func {
